@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "dma.h"
 #include "usart.h"
 #include "gpio.h"
@@ -76,6 +77,7 @@ uint8_t data[20];
 uint8_t Rx_data[10];
 uint8_t HalfTransmit[] = "halfTransmit";
 
+
 void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
 	  for(int i=0; i<10; i++){
@@ -132,6 +134,8 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART2_UART_Init();
+  MX_ADC1_Init();
+  MX_ADC3_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -143,15 +147,19 @@ int main(void)
    {
      data[i] = 'x';
    }*/
+  volatile static uint16_t value[2];
 
 	HAL_UART_Receive_DMA(&huart2, Rx_data, 10);
 
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)value, 2);
   while (1)
   {
 
 	 //HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	 //HAL_Delay(250);
+	  HAL_UART_Transmit_DMA(&huart2, value, 2);
 
+	  HAL_Delay(250);
 
     /* USER CODE END WHILE */
 
@@ -198,8 +206,9 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_ADC34;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+  PeriphClkInit.Adc34ClockSelection = RCC_ADC34PLLCLK_DIV1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -210,6 +219,7 @@ void SystemClock_Config(void)
 void	HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin == B1_Pin){
 	 	HAL_UART_Transmit_DMA(&huart2, data, sizeof(data));
+		//HAL_UART_Transmit_DMA(&huart2, value, sizeof(value));
 	}
 }
 /* USER CODE END 4 */
